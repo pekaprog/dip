@@ -970,7 +970,11 @@
       async function loadEconomicNews() {
         const newsContainer = document.getElementById('newsContainer');
         try {
-          const response = await fetch(`${API_URL}/news`);
+          const response = await fetch(`${API_URL}/news`, {
+            headers: {
+              'ngrok-skip-browser-warning': 'true'
+            }
+          });
           if (!response.ok) throw new Error("Не удалось загрузить новости");
           const newsList = await response.json();
 
@@ -1042,7 +1046,10 @@
         try {
           const response = await fetch(`${API_URL}/send-code`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'Content-Type': 'application/json',
+              'ngrok-skip-browser-warning': 'true'
+            },
             body: JSON.stringify({ email, type })
           });
 
@@ -1147,7 +1154,10 @@
         try {
           const response = await fetch(`${API_URL}/login`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'Content-Type': 'application/json',
+              'ngrok-skip-browser-warning': 'true'
+            },
             body: JSON.stringify({ username, password })
           });
           const result = await response.json();
@@ -1185,7 +1195,10 @@
         try {
           const response = await fetch(`${API_URL}/register`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'Content-Type': 'application/json',
+              'ngrok-skip-browser-warning': 'true'
+            },
             body: JSON.stringify({ username, password, email, code })
           });
           const result = await response.json();
@@ -1222,7 +1235,10 @@
         try {
           const response = await fetch(`${API_URL}/reset-password`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'Content-Type': 'application/json',
+              'ngrok-skip-browser-warning': 'true'
+            },
             body: JSON.stringify({ email, code, new_password })
           });
           const result = await response.json();
@@ -1300,7 +1316,10 @@
         try {
           const response = await fetch(`${API_URL}/delete-account`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'Content-Type': 'application/json',
+              'ngrok-skip-browser-warning': 'true'
+            },
             body: JSON.stringify({ username: user.username, email: user.email, code })
           });
           const result = await response.json();

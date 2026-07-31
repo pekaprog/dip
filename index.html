@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DIP — Управление портфелем</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg-color: #f5f5f7;
+      --header-bg: rgba(245, 245, 247, 0.8);
+      --text-main: #1d1d1f;
+      --text-secondary: #86868b;
+      --accent-color: #0071e3;
+      --accent-hover: #0077ed;
+      --border-color: rgba(0, 0, 0, 0.08);
+      --tab-bar-bg: rgba(118, 118, 128, 0.12);
+      --tab-active-bg: #ffffff;
+      --modal-bg: #ffffff;
+      --input-bg: rgba(118, 118, 128, 0.08);
+      --card-bg: #ffffff;
+      --danger-color: #ff3b30;
+      --font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    }
+
+    [data-theme="dark"] {
+      --bg-color: #000000;
+      --header-bg: rgba(0, 0, 0, 0.8);
+      --text-main: #f5f5f7;
+      --text-secondary: #86868b;
+      --border-color: rgba(255, 255, 255, 0.15);
+      --tab-bar-bg: rgba(118, 118, 128, 0.24);
+      --tab-active-bg: #1c1c1e;
+      --modal-bg: #1c1c1e;
+      --input-bg: rgba(118, 118, 128, 0.18);
+      --card-bg: #1c1c1e;
+    }
+
+    body {
+      font-family: var(--font-family);
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      -webkit-font-smoothing: antialiased;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    .auth-page {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: var(--bg-color);
+      z-index: 2000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .auth-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 24px;
+      padding: 40px 32px;
+      width: 100%;
+      max-width: 440px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+    }
+
+    .auth-title {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 24px;
+      text-align: center;
+    }
+
+    .header-nav {
+      width: 100%;
+      background: var(--header-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border-color);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 12px 20px;
+    }
+
+    .tab-bar {
+      display: flex;
+      gap: 8px;
+      background: var(--tab-bar-bg);
+      padding: 4px;
+      border-radius: 12px;
+    }
+
+    .tab-button {
+      border: none;
+      background: transparent;
+      padding: 8px 24px;
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .tab-button.active {
+      background: var(--tab-active-bg);
+      color: var(--text-main);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+      font-weight: 600;
+    }
+
+    .header-controls {
+      position: absolute;
+      right: 20px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .icon-btn {
+      background: var(--tab-bar-bg);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+
+    .icon-btn:hover {
+      transform: scale(1.05);
+    }
+
+    .icon-btn svg {
+      width: 20px;
+      height: 20px;
+      fill: currentColor;
+    }
+
+    .container {
+      max-width: 800px;
+      width: 100%;
+      padding: 50px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .tab-content {
+      display: none;
+      width: 100%;
+      animation: fadeIn 0.3s ease-in-out;
+    }
+
+    .tab-content.active {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .primary-btn {
+      background: var(--accent-color);
+      color: #ffffff;
+      border: none;
+      border-radius: 14px;
+      padding: 16px 24px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      transition: all 0.2s ease;
+    }
+
+    .primary-btn:hover {
+      filter: brightness(1.1);
+    }
+
+    .primary-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .full-width-btn {
+      width: 100%;
+      padding: 14px 20px;
+      white-space: normal;
+    }
+
+    .code-btn {
+      width: auto;
+      min-width: 90px;
+      padding: 0 16px;
+      white-space: nowrap;
+    }
+
+    .danger-btn {
+      background: var(--danger-color);
+      color: #ffffff;
+      border: none;
+      border-radius: 14px;
+      padding: 14px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 12px;
+    }
+
+    .secondary-action-btn {
+      background: transparent;
+      border: none;
+      color: var(--accent-color);
+      font-size: 14px;
+      cursor: pointer;
+      margin-top: 12px;
+      font-weight: 500;
+    }
+
+    .profile-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 24px;
+      padding: 36px;
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+    }
+
+    .avatar-wrapper {
+      position: relative;
+      width: 110px;
+      height: 110px;
+      margin-bottom: 24px;
+    }
+
+    .avatar-img {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: var(--input-bg);
+      border: 2px dashed var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-secondary);
+      overflow: hidden;
+    }
+
+    .avatar-img img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .avatar-upload-label {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      background: var(--accent-color);
+      color: #ffffff;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .avatar-upload-label svg {
+      width: 16px;
+      height: 16px;
+      fill: #ffffff;
+    }
+
+    #avatarInput { display: none; }
+
+    .profile-username {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .profile-email {
+      font-size: 15px;
+      color: var(--text-secondary);
+      margin-bottom: 24px;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal {
+      background: var(--modal-bg);
+      border: 1px solid var(--border-color);
+      padding: 32px;
+      border-radius: 20px;
+      width: 100%;
+      max-width: 440px;
+    }
+
+    .form-group { margin-bottom: 18px; }
+    .form-group label {
+      display: block;
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 14px 45px 14px 16px;
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+      background: var(--input-bg);
+      color: var(--text-main);
+      font-size: 16px;
+      outline: none;
+      font-family: inherit;
+    }
+
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    input[type="number"] {
+      -moz-appearance: textfield;
+    }
+
+    .form-range {
+      width: 100%;
+      accent-color: var(--accent-color);
+      margin-top: 8px;
+      cursor: pointer;
+    }
+
+    .range-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .range-value {
+      font-weight: 600;
+      color: var(--accent-color);
+    }
+
+    .toggle-password {
+      position: absolute;
+      right: 12px;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      opacity: 0.6;
+    }
+
+    .toggle-password svg {
+      width: 20px;
+      height: 20px;
+      fill: currentColor;
+    }
+
+    .input-row { display: flex; gap: 8px; }
+    .input-row .form-input { padding-right: 16px; }
+
+    .error-msg {
+      color: var(--danger-color);
+      font-size: 13px;
+      margin-bottom: 12px;
+      display: none;
+      text-align: center;
+    }
+
+    .auth-switch {
+      text-align: center;
+      margin-top: 16px;
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+
+    .auth-switch span {
+      color: var(--accent-color);
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .portfolio-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 20px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      margin-top: 12px;
+    }
+
+    .empty-state {
+      margin-top: 50px;
+      text-align: center;
+      color: var(--text-secondary);
+      font-size: 18px;
+    }
+
+    .color-palette {
+      display: flex;
+      gap: 12px;
+      justify-content: space-between;
+      margin-top: 12px;
+    }
+
+    .color-option {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+    }
+
+    .color-option.active { border-color: var(--text-main); }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="auth-page" id="authPage">
+    <div class="auth-card">
+      <h2 class="auth-title" id="authTitle">Вход в систему</h2>
+
+      <form id="loginForm">
+        <div class="form-group">
+          <label>Никнейм</label>
+          <input type="text" id="loginUsername" class="form-input" required>
+        </div>
+
+        <div class="form-group">
+          <label>Пароль</label>
+          <div class="input-wrapper">
+            <input type="password" id="loginPassword" class="form-input" required>
+            <button type="button" class="toggle-password" data-target="loginPassword">
+              <svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="error-msg" id="loginError"></div>
+        <button type="submit" class="primary-btn">Войти</button>
+        <button type="button" class="secondary-action-btn" id="toForgotBtn" style="width: 100%;">Забыли пароль?</button>
+        <div class="auth-switch">Нет аккаунта? <span id="switchToReg">Зарегистрироваться</span></div>
+      </form>
+
+      <form id="regForm" style="display: none;">
+        <div class="form-group">
+          <label>Никнейм</label>
+          <input type="text" id="regUsername" class="form-input" required>
+        </div>
+
+        <div class="form-group">
+          <label>Пароль</label>
+          <div class="input-wrapper">
+            <input type="password" id="regPassword" class="form-input" required>
+            <button type="button" class="toggle-password" data-target="regPassword">
+              <svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Электронная почта</label>
+          <div class="input-row">
+            <input type="email" id="regEmail" class="form-input" required>
+            <button type="button" class="primary-btn code-btn" id="sendRegCodeBtn">Код</button>
+          </div>
+        </div>
+
+        <div class="form-group" id="regCodeGroup" style="display: none;">
+          <label>Код из письма</label>
+          <input type="text" id="regCode" class="form-input">
+        </div>
+
+        <div class="error-msg" id="regError"></div>
+        <button type="submit" class="primary-btn" id="registerSubmitBtn" disabled>Зарегистрироваться</button>
+        <div class="auth-switch">Уже есть аккаунт? <span id="switchToLogin">Войти</span></div>
+      </form>
+
+      <form id="forgotForm" style="display: none;">
+        <div class="form-group">
+          <label>Ваша почта</label>
+          <div class="input-row">
+            <input type="email" id="forgotEmail" class="form-input" required>
+            <button type="button" class="primary-btn code-btn" id="sendForgotCodeBtn">Код</button>
+          </div>
+        </div>
+
+        <div class="form-group" id="forgotFields" style="display: none;">
+          <label>Код из письма</label>
+          <input type="text" id="forgotCode" class="form-input" style="margin-bottom: 12px;">
+
+          <label>Новый пароль</label>
+          <div class="input-wrapper">
+            <input type="password" id="newPassword" class="form-input">
+            <button type="button" class="toggle-password" data-target="newPassword">
+              <svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="error-msg" id="forgotError"></div>
+        <button type="submit" class="primary-btn" id="resetPasswordSubmitBtn" style="display: none;">Сохранить новый пароль</button>
+        <button type="button" class="secondary-action-btn" id="backToLoginFromForgot" style="width: 100%;">Вернуться к входу</button>
+      </form>
+    </div>
+  </div>
+
+  <header class="header-nav">
+    <nav class="tab-bar">
+      <button class="tab-button" data-tab="news">Новости</button>
+      <button class="tab-button active" data-tab="portfolios">Мои портфели</button>
+      <button class="tab-button" data-tab="profile">Профиль</button>
+    </nav>
+
+    <div class="header-controls">
+      <button class="icon-btn" id="settingsBtn" aria-label="Настройки">
+        <svg viewBox="0 0 24 24">
+          <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6-3.6 z"/>
+        </svg>
+      </button>
+
+      <button class="icon-btn" id="themeToggleBtn" aria-label="Тема">
+        <svg id="themeIcon" viewBox="0 0 24 24">
+          <path d="M12.3 2a10 10 0 0 0 9.7 11.5 10 10 0 1 1-11.7-11.5 8 8 0 0 0 2 0z"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <main class="container">
+    <section id="news" class="tab-content">
+      <p style="color:var(--text-secondary);">Раздел новостей пока пуст.</p>
+    </section>
+
+    <section id="portfolios" class="tab-content active">
+      <button class="primary-btn" id="createPortfolioBtn" style="width: auto; padding: 18px 48px;">Создать новый портфель</button>
+      <div class="empty-state" id="emptyState">
+        <p>У вас пока нет портфелей</p>
+      </div>
+      <div id="portfoliosList" style="width: 100%;"></div>
+    </section>
+
+    <section id="profile" class="tab-content">
+      <div class="profile-card">
+        <div class="avatar-wrapper">
+          <div class="avatar-img" id="avatarContainer">
+            <svg viewBox="0 0 24 24" width="48" height="48" fill="currentColor">
+              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+            </svg>
+          </div>
+          <label for="avatarInput" class="avatar-upload-label">
+            <svg viewBox="0 0 24 24">
+              <path d="M3 4c0-1.1.9-2 2-2h14a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4zm3 6V8h3V6h2v2h3v2h-3v3h-2v-3H6z"/>
+            </svg>
+          </label>
+          <input type="file" id="avatarInput" accept="image/*">
+        </div>
+
+        <h2 class="profile-username" id="displayUsername">Гость</h2>
+        <p class="profile-email" id="displayEmail">email@not.found</p>
+
+        <button class="primary-btn" id="logoutBtn" style="background: var(--tab-bar-bg); color: var(--text-main);">Выйти из профиля</button>
+        <button class="danger-btn" id="openDeleteModalBtn">Удалить профиль</button>
+      </div>
+    </section>
+  </main>
+
+  <div class="modal-overlay" id="portfolioModal">
+    <div class="modal">
+      <div class="modal-header" style="margin-bottom:20px;">
+        <h3 class="modal-title" style="text-align:center;">Новый портфель</h3>
+      </div>
+
+      <div class="form-group">
+        <label>Сумма инвестиций (₽)</label>
+        <input type="number" id="investmentAmount" class="form-input" placeholder="100 000">
+      </div>
+
+      <div class="form-group">
+        <div class="range-header">
+          <label style="margin-bottom: 0;">Срок инвестирования</label>
+          <span class="range-value" id="investmentTermValue">1 год</span>
+        </div>
+        <input type="range" id="investmentTerm" class="form-range" min="1" max="7" value="1" step="1">
+      </div>
+
+      <button class="primary-btn" id="submitPortfolioBtn" style="margin-top: 10px;">Создать</button>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="settingsModal">
+    <div class="modal">
+      <div class="modal-header" style="margin-bottom:20px;">
+        <h3 class="modal-title" style="text-align:center;">Цветовая палитра</h3>
+      </div>
+      <div class="color-palette">
+        <div class="color-option active" style="background: #0071e3;" data-color="#0071e3"></div>
+        <div class="color-option" style="background: #34c759;" data-color="#34c759"></div>
+        <div class="color-option" style="background: #ffcc00;" data-color="#ffcc00"></div>
+        <div class="color-option" style="background: #ff3b30;" data-color="#ff3b30"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="deleteModal">
+    <div class="modal">
+      <div class="modal-header" style="margin-bottom: 20px;">
+        <h3 class="modal-title" style="text-align:center;">Подтвердите удаление</h3>
+      </div>
+      <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 16px; text-align: center;">Мы отправим 6-значный код подтверждения на ваш email.</p>
+
+      <button type="button" class="primary-btn full-width-btn" id="sendDeleteCodeBtn" style="margin-bottom: 16px;">Отправить код на почту</button>
+
+      <div class="form-group" id="deleteCodeGroup" style="display: none;">
+        <label>Код из письма</label>
+        <input type="text" id="deleteCode" class="form-input" placeholder="000000">
+      </div>
+
+      <div class="error-msg" id="deleteError"></div>
+      <button type="button" class="danger-btn" id="confirmDeleteBtn" style="display: none;">Удалить аккаунт навсегда</button>
+      <button type="button" class="secondary-action-btn" id="closeDeleteModal" style="width: 100%;">Отмена</button>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = "https://stylist-creation-stove.ngrok-free.dev/api";
+
+    document.addEventListener('DOMContentLoaded', () => {
+
+      function startCodeTimer(btnElement, seconds = 90) {
+        btnElement.disabled = true;
+        let timeLeft = seconds;
+        const defaultText = btnElement.classList.contains('full-width-btn') ? 'Отправить код на почту' : 'Код';
+        btnElement.innerHTML = `&#10003; ${timeLeft}s`;
+
+        const timerId = setInterval(() => {
+          timeLeft--;
+          if (timeLeft <= 0) {
+            clearInterval(timerId);
+            btnElement.disabled = false;
+            btnElement.textContent = defaultText;
+          } else {
+            btnElement.innerHTML = `&#10003; ${timeLeft}s`;
+          }
+        }, 1000);
+      }
+
+      async function handleSendCode(email, btnElement, errorElement, type = "register") {
+        if (!email) {
+          errorElement.textContent = "Введите email!";
+          errorElement.style.display = 'block';
+          return false;
+        }
+
+        btnElement.disabled = true;
+
+        try {
+          const response = await fetch(`${API_URL}/send-code`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, type })
+          });
+
+          const result = await response.json();
+
+          if (!response.ok) {
+            throw new Error(result.detail || "Ошибка сервера");
+          }
+
+          errorElement.style.display = 'none';
+          startCodeTimer(btnElement, 90);
+          return true;
+
+        } catch (err) {
+          errorElement.textContent = err.message;
+          errorElement.style.display = 'block';
+
+          if (!err.message.includes("90 сек")) {
+            btnElement.disabled = false;
+          }
+          return false;
+        }
+      }
+
+      document.querySelectorAll('.toggle-password').forEach(button => {
+        button.addEventListener('click', () => {
+          const targetId = button.getAttribute('data-target');
+          const inputField = document.getElementById(targetId);
+          if (inputField.type === 'password') {
+            inputField.type = 'text';
+            button.style.opacity = '1';
+          } else {
+            inputField.type = 'password';
+            button.style.opacity = '0.6';
+          }
+        });
+      });
+
+      const tabButtons = document.querySelectorAll('.tab-button');
+      const tabContents = document.querySelectorAll('.tab-content');
+
+      tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          const targetTab = button.getAttribute('data-tab');
+          tabButtons.forEach(btn => btn.classList.remove('active'));
+          button.classList.add('active');
+
+          tabContents.forEach(content => {
+            content.classList.toggle('active', content.id === targetTab);
+          });
+        });
+      });
+
+      const themeToggleBtn = document.getElementById('themeToggleBtn');
+      if (localStorage.getItem('theme') === 'dark') {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      }
+
+      themeToggleBtn.addEventListener('click', () => {
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        if (isDark) {
+          document.documentElement.removeAttribute('data-theme');
+          localStorage.setItem('theme', 'light');
+        } else {
+          document.documentElement.setAttribute('data-theme', 'dark');
+          localStorage.setItem('theme', 'dark');
+        }
+      });
+
+      const authPage = document.getElementById('authPage');
+      const authTitle = document.getElementById('authTitle');
+      const loginForm = document.getElementById('loginForm');
+      const regForm = document.getElementById('regForm');
+      const forgotForm = document.getElementById('forgotForm');
+
+      function switchAuthPage(view) {
+        loginForm.style.display = view === 'login' ? 'block' : 'none';
+        regForm.style.display = view === 'reg' ? 'block' : 'none';
+        forgotForm.style.display = view === 'forgot' ? 'block' : 'none';
+
+        if (view === 'login') authTitle.textContent = "Вход в систему";
+        if (view === 'reg') authTitle.textContent = "Регистрация";
+        if (view === 'forgot') authTitle.textContent = "Сброс пароля";
+      }
+
+      document.getElementById('switchToReg').onclick = () => switchAuthPage('reg');
+      document.getElementById('switchToLogin').onclick = () => switchAuthPage('login');
+      document.getElementById('toForgotBtn').onclick = () => switchAuthPage('forgot');
+      document.getElementById('backToLoginFromForgot').onclick = () => switchAuthPage('login');
+
+      const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+      if (!currentUser) {
+        authPage.style.display = 'flex';
+      } else {
+        authPage.style.display = 'none';
+        updateProfileUI(currentUser);
+      }
+
+      function updateProfileUI(user) {
+        document.getElementById('displayUsername').textContent = user.username;
+        document.getElementById('displayEmail').textContent = user.email;
+        const savedAvatar = localStorage.getItem(`avatar_${user.username}`);
+        if (savedAvatar) {
+          document.getElementById('avatarContainer').innerHTML = `<img src="${savedAvatar}" alt="Avatar">`;
+        }
+      }
+
+      loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const username = document.getElementById('loginUsername').value;
+        const password = document.getElementById('loginPassword').value;
+        const errorElement = document.getElementById('loginError');
+
+        try {
+          const response = await fetch(`${API_URL}/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+          });
+          const result = await response.json();
+          if (!response.ok) throw new Error(result.detail);
+
+          localStorage.setItem('currentUser', JSON.stringify(result.user));
+          updateProfileUI(result.user);
+          authPage.style.display = 'none';
+        } catch (err) {
+          errorElement.textContent = err.message;
+          errorElement.style.display = 'block';
+        }
+      });
+
+      const sendRegCodeBtn = document.getElementById('sendRegCodeBtn');
+      sendRegCodeBtn.addEventListener('click', async () => {
+        const email = document.getElementById('regEmail').value;
+        const errorElement = document.getElementById('regError');
+        const ok = await handleSendCode(email, sendRegCodeBtn, errorElement, "register");
+
+        if (ok) {
+          document.getElementById('regCodeGroup').style.display = 'block';
+          document.getElementById('registerSubmitBtn').disabled = false;
+        }
+      });
+
+      regForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const username = document.getElementById('regUsername').value;
+        const password = document.getElementById('regPassword').value;
+        const email = document.getElementById('regEmail').value;
+        const code = document.getElementById('regCode').value;
+        const errorElement = document.getElementById('regError');
+
+        try {
+          const response = await fetch(`${API_URL}/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password, email, code })
+          });
+          const result = await response.json();
+          if (!response.ok) throw new Error(result.detail);
+
+          localStorage.setItem('currentUser', JSON.stringify(result.user));
+          updateProfileUI(result.user);
+          authPage.style.display = 'none';
+        } catch (err) {
+          errorElement.textContent = err.message;
+          errorElement.style.display = 'block';
+        }
+      });
+
+      const sendForgotCodeBtn = document.getElementById('sendForgotCodeBtn');
+      sendForgotCodeBtn.addEventListener('click', async () => {
+        const email = document.getElementById('forgotEmail').value;
+        const errorElement = document.getElementById('forgotError');
+        const ok = await handleSendCode(email, sendForgotCodeBtn, errorElement, "forgot");
+
+        if (ok) {
+          document.getElementById('forgotFields').style.display = 'block';
+          document.getElementById('resetPasswordSubmitBtn').style.display = 'block';
+        }
+      });
+
+      forgotForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('forgotEmail').value;
+        const code = document.getElementById('forgotCode').value;
+        const new_password = document.getElementById('newPassword').value;
+        const errorElement = document.getElementById('forgotError');
+
+        try {
+          const response = await fetch(`${API_URL}/reset-password`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, code, new_password })
+          });
+          const result = await response.json();
+          if (!response.ok) throw new Error(result.detail);
+
+          alert('Пароль обновлён!');
+          switchAuthPage('login');
+        } catch (err) {
+          errorElement.textContent = err.message;
+          errorElement.style.display = 'block';
+        }
+      });
+
+      document.getElementById('logoutBtn').addEventListener('click', () => {
+        localStorage.removeItem('currentUser');
+        location.reload();
+      });
+
+      document.getElementById('avatarInput').addEventListener('change', function (e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function (event) {
+          const base64Image = event.target.result;
+          const user = JSON.parse(localStorage.getItem('currentUser'));
+          document.getElementById('avatarContainer').innerHTML = `<img src="${base64Image}" alt="Avatar">`;
+          if (user) {
+            localStorage.setItem(`avatar_${user.username}`, base64Image);
+          }
+        };
+        reader.readAsDataURL(file);
+      });
+
+      const deleteModal = document.getElementById('deleteModal');
+      const deleteError = document.getElementById('deleteError');
+      const sendDeleteCodeBtn = document.getElementById('sendDeleteCodeBtn');
+      const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+
+      document.getElementById('openDeleteModalBtn').onclick = () => {
+        deleteError.style.display = 'none';
+        deleteModal.classList.add('active');
+      };
+
+      document.getElementById('closeDeleteModal').onclick = () => {
+        deleteModal.classList.remove('active');
+      };
+
+      sendDeleteCodeBtn.addEventListener('click', async () => {
+        const user = JSON.parse(localStorage.getItem('currentUser'));
+        if (!user || !user.email) {
+          deleteError.textContent = "Ошибка получения пользователя. Перевойдите заново.";
+          deleteError.style.display = 'block';
+          return;
+        }
+
+        const ok = await handleSendCode(user.email, sendDeleteCodeBtn, deleteError, "delete");
+
+        if (ok) {
+          document.getElementById('deleteCodeGroup').style.display = 'block';
+          confirmDeleteBtn.style.display = 'block';
+        }
+      });
+
+      confirmDeleteBtn.addEventListener('click', async () => {
+        const user = JSON.parse(localStorage.getItem('currentUser'));
+        const code = document.getElementById('deleteCode').value.trim();
+
+        if (!code) {
+          deleteError.textContent = "Введите код из письма!";
+          deleteError.style.display = 'block';
+          return;
+        }
+
+        try {
+          const response = await fetch(`${API_URL}/delete-account`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: user.username, email: user.email, code })
+          });
+          const result = await response.json();
+
+          if (!response.ok) {
+            if (response.status === 404) {
+              localStorage.removeItem('currentUser');
+              alert("Сессия устарела или сервер был перезапущен. Зарегистрируйтесь или войдите заново.");
+              location.reload();
+              return;
+            }
+            throw new Error(result.detail);
+          }
+
+          localStorage.removeItem('currentUser');
+          localStorage.removeItem(`avatar_${user.username}`);
+          alert('Профиль успешно удалён!');
+          location.reload();
+        } catch (err) {
+          deleteError.textContent = err.message;
+          deleteError.style.display = 'block';
+        }
+      });
+
+      const createPortfolioBtn = document.getElementById('createPortfolioBtn');
+      const portfolioModal = document.getElementById('portfolioModal');
+      const amountInput = document.getElementById('investmentAmount');
+      const termInput = document.getElementById('investmentTerm');
+      const termValueDisplay = document.getElementById('investmentTermValue');
+      const portfoliosList = document.getElementById('portfoliosList');
+      const emptyState = document.getElementById('emptyState');
+      let savedPortfolios = JSON.parse(localStorage.getItem('portfolios') || '[]');
+
+      function formatYears(years) {
+        const y = parseInt(years);
+        if (y === 1) return "1 год";
+        if (y >= 2 && y <= 4) return `${y} года`;
+        return `${y} лет`;
+      }
+
+      termInput.addEventListener('input', (e) => {
+        termValueDisplay.textContent = formatYears(e.target.value);
+      });
+
+      function renderPortfolios() {
+        portfoliosList.innerHTML = '';
+        if (savedPortfolios.length === 0) {
+          emptyState.style.display = 'block';
+        } else {
+          emptyState.style.display = 'none';
+          savedPortfolios.forEach((item, index) => {
+            const card = document.createElement('div');
+            card.className = 'portfolio-card';
+            const termText = item.term ? formatYears(item.term) : '1 год';
+            card.innerHTML = `
+              <div>
+                <strong>${Number(item.amount).toLocaleString('ru-RU')} ₽</strong>
+                <span style="display:block; font-size:13px; color:var(--text-secondary);">Срок: ${termText}</span>
+              </div>
+              <button style="color:var(--danger-color); background:transparent; border:none; cursor:pointer;" onclick="deletePortfolio(${index})">Удалить</button>
+            `;
+            portfoliosList.appendChild(card);
+          });
+        }
+      }
+
+      window.deletePortfolio = (index) => {
+        savedPortfolios.splice(index, 1);
+        localStorage.setItem('portfolios', JSON.stringify(savedPortfolios));
+        renderPortfolios();
+      };
+
+      renderPortfolios();
+
+      createPortfolioBtn.onclick = () => portfolioModal.classList.add('active');
+      document.getElementById('submitPortfolioBtn').onclick = () => {
+        const amount = amountInput.value;
+        const term = termInput.value;
+        if (!amount || amount <= 0) return;
+
+        savedPortfolios.push({ amount, term });
+        localStorage.setItem('portfolios', JSON.stringify(savedPortfolios));
+        renderPortfolios();
+
+        amountInput.value = '';
+        termInput.value = '1';
+        termValueDisplay.textContent = '1 год';
+        portfolioModal.classList.remove('active');
+      };
+
+      const settingsModal = document.getElementById('settingsModal');
+      document.getElementById('settingsBtn').onclick = () => settingsModal.classList.add('active');
+
+      document.querySelectorAll('.color-option').forEach(option => {
+        option.onclick = () => {
+          document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('active'));
+          option.classList.add('active');
+
+          const color = option.getAttribute('data-color');
+          document.documentElement.style.setProperty('--accent-color', color);
+          localStorage.setItem('accentColor', color);
+        };
+      });
+
+      const savedColor = localStorage.getItem('accentColor');
+      if (savedColor) document.documentElement.style.setProperty('--accent-color', savedColor);
+
+      window.onclick = (e) => {ф
+        if (e.target.classList.contains('modal-overlay')) {
+          e.target.classList.remove('active');
+        }
+      };
+    });
+  </script>
+</body>
+</html>Ф

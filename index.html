@@ -26,6 +26,7 @@
       --input-bg: rgba(118, 118, 128, 0.08);
       --card-bg: #ffffff;
       --danger-color: #ff3b30;
+      --success-color: #34c759;
       --font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
     }
 
@@ -55,7 +56,6 @@
       padding-bottom: 20px;
     }
 
-    /* Авторизация */
     .auth-page {
       position: fixed;
       top: 0;
@@ -119,7 +119,7 @@
 
     .tab-bar {
       display: flex;
-      gap: 8px;
+      gap: 6px;
       background: var(--tab-bar-bg);
       padding: 4px;
       border-radius: 12px;
@@ -128,8 +128,8 @@
     .tab-button {
       border: none;
       background: transparent;
-      padding: 8px 24px;
-      font-size: 15px;
+      padding: 8px 18px;
+      font-size: 14px;
       font-weight: 500;
       color: var(--text-secondary);
       border-radius: 8px;
@@ -206,12 +206,112 @@
       align-items: center;
     }
 
+    /* Рынок и Акции */
+    .market-section {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .search-box {
+      width: 100%;
+      position: relative;
+    }
+
+    .market-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 14px;
+      width: 100%;
+    }
+
+    .asset-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+
+    .asset-card:active {
+      transform: scale(0.98);
+    }
+
+    .asset-symbol {
+      font-weight: 700;
+      font-size: 16px;
+    }
+
+    .asset-name {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: 12px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .asset-price-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+
+    .asset-price {
+      font-weight: 600;
+      font-size: 16px;
+    }
+
+    .asset-change {
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .is-pos { color: var(--success-color); }
+    .is-neg { color: var(--danger-color); }
+
+    /* График */
+    .chart-box {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 20px;
+      width: 100%;
+      margin-top: 10px;
+    }
+
+    .chart-title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .svg-chart {
+      width: 100%;
+      height: 180px;
+      overflow: visible;
+    }
+
     /* Стили для новостей */
     .news-grid {
       display: grid;
       grid-template-columns: 1fr;
       gap: 16px;
       width: 100%;
+    }
+
+    .news-filter-bar {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
     }
 
     .news-card {
@@ -624,7 +724,7 @@
 
       .header-nav {
         justify-content: flex-start;
-        padding: calc(10px + env(safe-area-inset-top)) 16px 10px;
+        padding: calc(10px + env(safe-area-inset-top)) 12px 10px;
       }
 
       .header-controls {
@@ -658,20 +758,20 @@
         background: var(--header-bg);
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
-        padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+        padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
         justify-content: space-around;
         z-index: 999;
       }
 
       .tab-button {
         flex: 1;
-        padding: 10px 4px;
-        font-size: 13px;
+        padding: 8px 2px;
+        font-size: 11px;
         text-align: center;
       }
 
       .container {
-        padding: 20px 16px;
+        padding: 16px 12px;
       }
 
       .auth-card {
@@ -797,6 +897,7 @@
 
   <header class="header-nav">
     <nav class="tab-bar">
+      <button class="tab-button" data-tab="market">Рынок</button>
       <button class="tab-button" data-tab="news">Новости</button>
       <button class="tab-button active" data-tab="portfolios">Мои портфели</button>
       <button class="tab-button" data-tab="profile">Профиль</button>
@@ -831,7 +932,33 @@
   </div>
 
   <main class="container">
+    <!-- 4-Й РАЗДЕЛ: РЫНОК -->
+    <section id="market" class="tab-content">
+      <div class="market-section">
+        <div class="search-box">
+          <input type="text" id="marketSearchInput" class="form-input" placeholder="Поиск акций, облигаций, компаний (SBER, AAPL)...">
+        </div>
+
+        <div class="market-grid" id="marketGrid">
+          <div class="news-loading">Загрузка котировок рынка...</div>
+        </div>
+
+        <div class="chart-box" id="chartBox" style="display: none;">
+          <div class="chart-title-row">
+            <h3 id="chartSymbolTitle" style="font-size:18px;">График AAPL</h3>
+            <span style="font-size:12px; color:var(--text-secondary);">15 дн. тренд</span>
+          </div>
+          <svg class="svg-chart" id="chartSvg" viewBox="0 0 300 150" preserveAspectRatio="none"></svg>
+        </div>
+      </div>
+    </section>
+
+    <!-- РАЗДЕЛ: НОВОСТИ -->
     <section id="news" class="tab-content">
+      <div class="news-filter-bar">
+        <span style="font-size: 14px; font-weight: 600; color: var(--text-secondary);">Фильтр:</span>
+        <button class="tab-button active" id="latestNewsBtn" style="padding: 4px 12px; font-size:12px;">Самые свежие</button>
+      </div>
       <div id="newsContainer" class="news-grid">
         <div class="news-loading">Загрузка свежих макроэкономических новостей...</div>
       </div>
@@ -966,14 +1093,108 @@
         btn.addEventListener('click', toggleTheme);
       });
 
+      // РЫНОК / КОТИРОВКИ / ГРАФИКИ
+      async function loadMarketQuotes() {
+        const grid = document.getElementById('marketGrid');
+        try {
+          const res = await fetch(`${API_URL}/market/quotes`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
+          const items = await res.json();
+          renderMarketCards(items);
+        } catch (e) {
+          grid.innerHTML = '<div class="news-loading" style="color:var(--danger-color);">Ошибка загрузки рынка.</div>';
+        }
+      }
+
+      function renderMarketCards(items) {
+        const grid = document.getElementById('marketGrid');
+        grid.innerHTML = '';
+        items.forEach(item => {
+          const card = document.createElement('div');
+          card.className = 'asset-card';
+          const posClass = item.is_positive !== false ? 'is-pos' : 'is-neg';
+          card.innerHTML = `
+            <div>
+              <div class="asset-symbol">${item.symbol}</div>
+              <div class="asset-name">${item.name}</div>
+            </div>
+            <div class="asset-price-row">
+              <span class="asset-price">${item.price}</span>
+              <span class="asset-change ${posClass}">${item.change}</span>
+            </div>
+          `;
+          card.onclick = () => loadAssetChart(item.symbol);
+          grid.appendChild(card);
+        });
+      }
+
+      async function loadAssetChart(symbol) {
+        const box = document.getElementById('chartBox');
+        const title = document.getElementById('chartSymbolTitle');
+        const svg = document.getElementById('chartSvg');
+
+        title.textContent = `Динамика ${symbol}`;
+        box.style.display = 'block';
+
+        try {
+          const res = await fetch(`${API_URL}/market/chart?symbol=${symbol}`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
+          const data = await res.json();
+          renderChartSvg(data.points, svg);
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
+      function renderChartSvg(points, svg) {
+        if (!points || !points.length) return;
+        const prices = points.map(p => p.price);
+        const minP = Math.min(...prices);
+        const maxP = Math.max(...prices);
+        const range = (maxP - minP) || 1;
+
+        let pathD = "";
+        points.forEach((p, idx) => {
+          const x = (idx / (points.length - 1)) * 300;
+          const y = 140 - ((p.price - minP) / range) * 120;
+          if (idx === 0) pathD += `M ${x} ${y}`;
+          else pathD += ` L ${x} ${y}`;
+        });
+
+        const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent-color').trim() || '#0071e3';
+        svg.innerHTML = `
+          <path d="${pathD}" fill="none" stroke="${accent}" stroke-width="3" stroke-linecap="round" />
+        `;
+      }
+
+      let searchTimeout = null;
+      document.getElementById('marketSearchInput').addEventListener('input', (e) => {
+        clearTimeout(searchTimeout);
+        const q = e.target.value.trim();
+        if (q.length < 2) {
+          loadMarketQuotes();
+          return;
+        }
+        searchTimeout = setTimeout(async () => {
+          try {
+            const res = await fetch(`${API_URL}/market/search?query=${encodeURIComponent(q)}`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
+            const matches = await res.json();
+            const formatted = matches.map(m => ({
+              symbol: m.symbol,
+              name: m.name,
+              price: "---",
+              change: m.type || "Asset",
+              is_positive: true
+            }));
+            renderMarketCards(formatted);
+          } catch (err) {}
+        }, 400);
+      });
+
       // Функция получения и отрисовки новостей
       async function loadEconomicNews() {
         const newsContainer = document.getElementById('newsContainer');
         try {
-          const response = await fetch(`${API_URL}/news`, {
-            headers: {
-              'ngrok-skip-browser-warning': 'true'
-            }
+          const response = await fetch(`${API_URL}/news?sort_by=latest`, {
+            headers: { 'ngrok-skip-browser-warning': 'true' }
           });
           if (!response.ok) throw new Error("Не удалось загрузить новости");
           const newsList = await response.json();
@@ -1103,6 +1324,8 @@
 
           if (targetTab === 'news') {
             loadEconomicNews();
+          } else if (targetTab === 'market') {
+            loadMarketQuotes();
           }
         });
       });
